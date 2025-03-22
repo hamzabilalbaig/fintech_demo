@@ -1,74 +1,229 @@
-import { Image, StyleSheet, Platform } from 'react-native';
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Animated,
+  StyleSheet,
+  Dimensions,
+} from "react-native";
+import { LineChart } from "react-native-svg-charts";
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+export default function App() {
+  const [moneyLeft, setMoneyLeft] = useState(250);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const fadeAnim = useState(new Animated.Value(0))[0];
+  const scaleAnim = useState(new Animated.Value(0.8))[0];
 
-export default function HomeScreen() {
+  const handleTransaction = () => {
+    setMoneyLeft(moneyLeft - 50);
+    setAlertVisible(true);
+
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 6,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const handleCool = () => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 0.8,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start(() => setAlertVisible(false));
+  };
+
+  const handleCutBack = () => {
+    setMoneyLeft((prev) => prev + 25);
+    handleCool();
+  };
+
+  const data = [300, 275, 250, 230, 220, 200, moneyLeft];
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
+    <View style={styles.container}>
+      <Text style={styles.title}>Spending Coach</Text>
+
+      <View style={styles.card}>
+        <Text style={styles.moneyLeft}>${moneyLeft}</Text>
+        <Text style={styles.subText}>Left this week</Text>
+      </View>
+
+      <TouchableOpacity style={styles.transaction} onPress={handleTransaction}>
+        <Text style={styles.transactionText}>💳 - $50 on Takeout</Text>
+      </TouchableOpacity>
+
+      {/* Spending Trend Graph */}
+      <View style={styles.graphContainer}>
+        <Text style={styles.graphTitle}>Spending Trend</Text>
+        <LineChart
+          style={styles.graph}
+          data={data}
+          svg={{ stroke: "#4CAF50", strokeWidth: 3 }}
+          contentInset={{ top: 20, bottom: 20 }}
         />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12'
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          Tap the Explore tab to learn more about what's included in this starter app.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          When you're ready, run{' '}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+      </View>
+
+      {/* Alert Box - Positioned at the Bottom */}
+      {alertVisible && (
+        <Animated.View
+          style={[
+            styles.alertBox,
+            { opacity: fadeAnim, transform: [{ scale: scaleAnim }] },
+          ]}
+        >
+          <Text style={styles.alertText}>
+            You spent $50—${moneyLeft} left this week. Cool or cut back?
+          </Text>
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity style={styles.button} onPress={handleCool}>
+              <Text style={styles.buttonText}>Cool</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.button, styles.cutBack]}
+              onPress={handleCutBack}
+            >
+              <Text style={styles.buttonText}>Cut Back</Text>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+      )}
+    </View>
   );
 }
 
+const { width, height } = Dimensions.get("window");
+
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  container: {
+    flex: 1,
+    backgroundColor: "#f0f4f8",
+    paddingTop: 50,
+    paddingHorizontal: 20,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  title: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 20,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  card: {
+    backgroundColor: "#4CAF50",
+    paddingVertical: 25,
+    borderRadius: 15,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 6,
+    marginBottom: 30,
+  },
+  moneyLeft: {
+    fontSize: 36,
+    fontWeight: "bold",
+    color: "#fff",
+  },
+  subText: {
+    fontSize: 16,
+    color: "#d9f7de",
+  },
+  transaction: {
+    backgroundColor: "#FF7043",
+    paddingVertical: 12,
+    borderRadius: 12,
+    marginBottom: 30,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  transactionText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  alertBox: {
+    backgroundColor: "#fff",
+    padding: 20,
+    borderRadius: 15,
+    position: "absolute",
+    bottom: 30, // Places the alert **ABOVE** the graph
+    left: "5%",
+    width: "100%",
+    alignSelf: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 10, // Keeps alert **on top**
+    zIndex: 10,
+  },
+  alertText: {
+    fontSize: 18,
+    marginBottom: 15,
+    textAlign: "center",
+    color: "#333",
+  },
+  buttonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  button: {
+    backgroundColor: "#4CAF50",
+    paddingVertical: 10,
+    borderRadius: 8,
+    flex: 1,
+    marginHorizontal: 5,
+    alignItems: "center",
+  },
+  cutBack: {
+    backgroundColor: "#FFCA28",
+  },
+  buttonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  graphContainer: {
+    marginTop: 30,
+    backgroundColor: "#fff",
+    padding: 20,
+    borderRadius: 15,
+    width: width * 0.9,
+    alignSelf: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 6,
+    zIndex: 1, // Keeps graph below alert
+  },
+  graphTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
+    textAlign: "center",
+  },
+  graph: {
+    height: 200,
+    width: "100%",
   },
 });
